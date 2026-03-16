@@ -12,12 +12,13 @@ const DIST_DIR = path.join(OUTPUT_DIR,'dist');
 function validateGitUrl(url){
     if(!url) 
         throw new Error("GIT_REPOSITORY__URL env variable is not set");
-    
+    url = url.trim()
     // github or gitlab urls
     const allowedPattern = /^https:\/\/(github\.com|gitlab\.com)\/[\w.\-]+\/[\w.\-]+(\.git)?$/;
     if(!allowedPattern.test(url)){
         throw new Error(`Rejected git URL: ${url} - only public Github and GitLab HTTPS URLs allowed `);
     }
+    return url
 }
 function cloneRepo(repoUrl){
     return new Promise((res,rej)=>{
@@ -55,12 +56,11 @@ function runBuild(){
                 cwd:OUTPUT_DIR,
                 env: {
                     ...process.env,
-                    // strip AWS credentials from the build environment completely
                     AWS_ACCESS_KEY_ID: undefined,
                     AWS_SECRET_ACCESS_KEY: undefined,
                     AWS_SESSION_TOKEN: undefined,
                     AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: undefined,  // blocks ECS metadata endpoint
-                    NODE_ENV: 'production',
+                    NODE_ENV: undefined,
                 },
                 maxBuffer: 10 * 1024 * 1024  
             },
@@ -94,8 +94,9 @@ function verifyDistExists(){
 async function init(){
     try {
         const repoURL = process.env.GIT_REPOSITORY__URL;
-        validateGitUrl(repoURL);
-        await cloneRepo(repoURL);
+        console.log(repoURL)
+        const cleanURL=validateGitUrl(repoURL);
+        await cloneRepo(cleanURL);
         await runBuild();
         verifyDistExists();
         console.log('[builder] Done. dist/ is ready for uploader.')
