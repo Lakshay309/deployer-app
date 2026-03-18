@@ -25,13 +25,32 @@ const config={
 
 app.use(express.json());
 
+function validateGitUrl(url){
+    if(!url) 
+        throw new Error("GIT_REPOSITORY__URL env variable is not set");
+    url = url.trim()
+    // github or gitlab urls
+    const allowedPattern = /^https:\/\/(github\.com|gitlab\.com)\/[\w.\-]+\/[\w.\-]+(\.git)?$/;
+    if(!allowedPattern.test(url)){
+        throw new Error(`Rejected git URL: ${url} - only public Github and GitLab HTTPS URLs allowed `);
+    }
+    return url
+}
 // function publishLog(log){
 //     publisher.pulish(`logs:${log}`)
 // }
 app.post('/project',async(req,res)=>{
     const projectId = generateSlug();
     const {gitURL}=req.body;
-
+    if(!validateGitUrl(gitURL)){
+        return res.json({
+            status:"Error",
+            data:{
+                message:"Incorrect url",
+                gitURL,
+            }
+        })
+    }
     const command = new RunTaskCommand({
         cluster:config.CLUSTER,
         taskDefinition:config.TASK,
