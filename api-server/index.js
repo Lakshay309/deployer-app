@@ -82,11 +82,15 @@ app.post('/project',async(req,res)=>{
             ]
         }
     })
-    await ecsClient.send(command);
+    const response = await ecsClient.send(command);
+    const taskArn = response.tasks[0].taskArn
+    const taskId = taskArn.split('/').pop()
+
     return res.json({
         status:'queued',
         data:{
             projectId,
+            taskId,
             url:`http://${projectId}.localhost:8000`
         }
     })
