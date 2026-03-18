@@ -50,12 +50,16 @@ async function getLogStreams(taskId) {
 async function pollStream(streamName, nextToken) {
     if (!streamName) return { events: [], nextToken }
 
-    const response = await cloudwatch.send(new GetLogEventsCommand({
+    const params = {
         logGroupName: LOG_GROUP,
         logStreamName: streamName,
-        nextToken,
         startFromHead: true,
-    }))
+    }
+    if (nextToken) {
+        params.nextToken = nextToken
+    }
+    const response = await cloudwatch.send(new GetLogEventsCommand(params))
+
     return {
         events: response.events || [],
         nextToken: response.nextForwardToken,
@@ -91,74 +95,77 @@ wss.on('connection', (ws) => {
             let deploymentDone = false
 
             async function poll() {
-                if (!polling || ws.readyState !== ws.OPEN) return;
+    if (!polling || ws.readyState !== ws.OPEN) return
 
-                try {
+    try {
+        if (!streamsFetched) {
+            const streams = await getLogStreams(taskId)
+            builderStream = streams.builderStream
+            uploaderStream = streams.uploaderStream
 
-                    if (!streamsFetched) {
-                        const streams = await getLogStreams(taskId);
-                        builderStream = streams.builderStream;
-                        uploaderStream = streams.uploadStream;
-                        if (builderStream || uploaderStream) {
-                            streamsFetched = true;
-                        }
-                    }
+            if (builderStream || uploaderStream) {
+                streamsFetched = true
+                console.log('[log-server] streams found:', { builderStream, uploaderStream })
+            }
+        }
 
-                    if (builderStream) {
-                        const result = await pollStream(builderStream, builderToken)
-                        for (const event of result.events) {
-                            ws.send(JSON.stringify({
-                                type: 'log',
-                                container: 'builder',
-                                message: event.message,
-                                timestamp: event.timestamp
-                            }))
-
-                            // check if builder is done
-                            if (event.message.includes('[builder] Done')) {
-                                console.log('[log-server] Builder finished')
-                            }
-                        }
-                        builderToken = result.nextToken
-                    }
-
-                    // poll uploader logs
-                    if (uploaderStream) {
-                        const result = await pollStream(uploaderStream, uploaderToken)
-                        for (const event of result.events) {
-                            ws.send(JSON.stringify({
-                                type: 'log',
-                                container: 'uploader',
-                                message: event.message,
-                                timestamp: event.timestamp
-                            }))
-
-                            // check if deployment is complete
-                            if (event.message.toLowerCase().includes('[uploader] done')) {
-                                deploymentDone = true
-                            }
-                        }
-                        uploaderToken = result.nextToken
-                    }
-
-                    // stop polling if deployment is done
-                    if (deploymentDone) {
-                        polling = false
-                        ws.send(JSON.stringify({
-                            type: 'done',
-                            message: 'Deployment complete!'
-                        }))
-                        console.log(`[log-server] Deployment done for task: ${taskId}`)
-                        return
-                    }
-                } catch (err) {
-                    console.error('[log-server] Poll error:', err.message)
-                }
-
-                if (polling) {
-                    pollTimer = setTimeout(poll, POLL_INTERVAL_MS)
+        // always poll both regardless of order
+        if (builderStream) {
+            const result = await pollStream(builderStream, builderToken)
+            for (const event of result.events) {
+                ws.send(JSON.stringify({
+                    type: 'log',
+                    container: 'builder',
+                    message: event.message,
+                    timestamp: event.timestamp
+                }))
+                if (event.message.includes('[builder] Done')) {
+                    console.log('[log-server] Builder finished')
                 }
             }
+            // only update token if we got events
+            if (result.events.length > 0) {
+                builderToken = result.nextToken
+            }
+        }
+
+        if (uploaderStream) {
+            const result = await pollStream(uploaderStream, uploaderToken)
+            for (const event of result.events) {
+                ws.send(JSON.stringify({
+                    type: 'log',
+                    container: 'uploader',
+                    message: event.message,
+                    timestamp: event.timestamp
+                }))
+                if (event.message.toLowerCase().includes('[uploader] done')) {
+                    deploymentDone = true
+                }
+            }
+            // only update token if we got events
+            if (result.events.length > 0) {
+                uploaderToken = result.nextToken
+            }
+        }
+
+        if (deploymentDone) {
+            polling = false
+            ws.send(JSON.stringify({
+                type: 'done',
+                message: 'Deployment complete!'
+            }))
+            console.log(`[log-server] Deployment done for task: ${taskId}`)
+            return
+        }
+
+    } catch (err) {
+        console.error('[log-server] Poll error:', err.message)
+    }
+
+    if (polling) {
+        pollTimer = setTimeout(poll, POLL_INTERVAL_MS)
+    }
+}
 
             poll()
 
