@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-RUN apk add --no-cache git bash
+RUN apk add --no-cache git bash su-exec
 
 RUN addgroup -S builder && adduser -S builder -G builder
 
@@ -10,9 +10,9 @@ COPY package*.json ./
 RUN npm install
 
 COPY script.js .
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
 
-RUN mkdir -p /home/app/output && chown builder:builder /home/app/output
+RUN mkdir -p /home/app/output
 
-USER builder
-
-CMD ["node", "script.js"]
+CMD ["./entrypoint.sh"]

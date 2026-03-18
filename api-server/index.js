@@ -19,17 +19,17 @@ const ecsClient = new ECSClient({
     }
 })
 const config={
-    CLUSTER:process.env.CLUSTER,
-    TASK:process.env.TASK
+    CLUSTER:process.env.ECS_CLUSTER,
+    TASK:process.env.ECS_TASK
 }
 
 app.use(express.json());
 
-function publishLog(log){
-    publisher.pulish(`logs:${log}`)
-}
+// function publishLog(log){
+//     publisher.pulish(`logs:${log}`)
+// }
 app.post('/project',async(req,res)=>{
-    const projectSlug = generateSlug();
+    const projectId = generateSlug();
     const {gitURL}=req.body;
 
     const command = new RunTaskCommand({
@@ -45,17 +45,19 @@ app.post('/project',async(req,res)=>{
             }
         },
         overrides:{
-            containerOverrides:[
+            containerOverrides: [
                 {
-                    name:'builder-image',
-                    environment:[
-                        {name:'GIT_REPOSITORY__URL',value:gitURL},
-                        {name:'PROJECT_ID',value:projectSlug},
-                        {name:'BUCKET_NAME',value:process.env.BUCKET_NAME},
-                        {name:'REGION',value:process.env.REGION},
-                        {name:'ACCESS_KEY',value:process.env.ACCESS_KEY},
-                        {name:'SECRET_ACCESS_KEY',value:process.env.SECRET_ACCESS_KEY},
-                        {name:'DATABASE_URI',value:process.env.DATABASE_URI}
+                    // builder gets gitURL and projectId
+                    name: 'builder',
+                    environment: [
+                        { name: 'GIT_REPOSITORY__URL', value: gitURL },
+                        { name: 'PROJECT_ID', value: projectId }
+                    ]
+                },
+                {
+                    name: 'uploader',
+                    environment: [
+                        { name: 'PROJECT_ID', value: projectId }
                     ]
                 }
             ]
@@ -65,8 +67,8 @@ app.post('/project',async(req,res)=>{
     return res.json({
         status:'queued',
         data:{
-            projectSlug,
-            url:`http://${projectSlug}.localhost:8000`
+            projectId,
+            url:`http://${projectId}.localhost:8000`
         }
     })
 })
