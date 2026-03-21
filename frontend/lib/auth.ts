@@ -49,3 +49,18 @@ export function generateToken():string{
     crypto.getRandomValues(array);
     return Array.from(array,byte=>byte.toString(16).padStart(2,'0')).join('')
 }
+
+export async function setAuthCookie(payload:JWTPayload) {
+    const token = await signToken(payload);
+    const cookieStore = await cookies();
+
+    cookieStore.set(COOKIE_NAME,token,
+        {
+            httpOnly:true,
+            secure:process.env.NODE_ENV==='production',
+            sameSite:'lax',
+            maxAge:60*60*24*7,
+            path:'/'
+        }
+    )
+}
