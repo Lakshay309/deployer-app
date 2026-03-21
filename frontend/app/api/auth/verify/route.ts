@@ -3,7 +3,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(request:NextRequest){
+export async function GET(request:NextRequest){
     try {
         const {searchParams} = new URL(request.url);
         const token = searchParams.get('token');

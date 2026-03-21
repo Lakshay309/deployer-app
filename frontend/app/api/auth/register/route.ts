@@ -31,32 +31,39 @@ export async function POST(request:NextRequest){
                 { status: 409 }
             )
         }
+        
 
         const existingEmail = await db
             .select()
             .from(users)
-            .where(and(eq(users.email,email),eq(users.isVerified,true)))
-            .limit(1)
-        
-        if(existingEmail.length>0){
-            return NextResponse.json(
-                { error: 'An account with this email already exists' },
-                { status: 409 }
+            .where(
+                and(
+                    eq(users.email,email),
+                    eq(users.isVerified,true)
+                )
             )
-        }
-
-        const betaUser = await db
+            .limit(1)
+            if(existingEmail.length>0){
+                return NextResponse.json(
+                    { error: 'An account with this email already exists' },
+                    { status: 409 }
+                )
+            }
+            
+            const betaUser = await db
             .select()
             .from(betaEmails)
             .where(eq(betaEmails.email, email))
             .limit(1)
-
+            
+        // console.log("working?")
         if (betaUser.length === 0) {
             return NextResponse.json(
                 { error: 'This email is not on the beta list. Please request access.' },
                 { status: 403 }
             )
         }
+        
 
         const passwordHash = await bcrypt.hash(password,12);
         const verifyToken = generateToken();

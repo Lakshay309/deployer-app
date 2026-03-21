@@ -32,7 +32,7 @@ export async function sendVerificationEmail(email: string, token: string) {
             <h2>Welcome to ${APP_NAME}!</h2>
             <p>Click the button below to verify your email address.</p>
             <p>This link expires in <strong>24 hours</strong>.</p>
-            
+            <a
                 href="${verifyUrl}"
                 style="
                     display: inline-block;
