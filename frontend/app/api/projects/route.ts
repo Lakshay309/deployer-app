@@ -3,7 +3,7 @@ import { deployments, projects } from "@/db/schema";
 import { getAuthUser } from "@/lib/auth";
 import { newProjectSchema } from "@/lib/validations";
 import axios from "axios";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 
@@ -18,7 +18,8 @@ export async function GET(request:NextRequest){
             .select()
             .from(projects)
             .where(eq(projects.userId,user.userId))
-        
+            .orderBy(desc(projects.createdAt))
+
         return NextResponse.json({projects:userProjects})
 
     } catch (error) {
@@ -29,8 +30,6 @@ export async function GET(request:NextRequest){
         )
     }
 }
-
-
 
 
 export async function POST(request:NextRequest){
@@ -45,7 +44,7 @@ export async function POST(request:NextRequest){
 
         if(!result.success){
             return NextResponse.json(
-                { error: result.error?.message },
+                { error: "formatting issue"},
                 { status: 400 }
             )
         }
@@ -61,7 +60,7 @@ export async function POST(request:NextRequest){
             
         if (existing.length > 0) {
             return NextResponse.json(
-                { error: 'Name already taken' },
+                { error: 'This project name is already taken' },
                 { status: 409 }
             )
         }
@@ -77,15 +76,15 @@ export async function POST(request:NextRequest){
             .returning()
         
         const deployResponse = await axios.post(
-            `${process.env.API_SERVER_URL}/deploy`,
+            `${process.env.API_SERVER_URL}/project`,
             {
                 gitURL: repoUrl,
-                projectId: project.id,
+                projectId: project.name,
             }
         )
-
-        const { taskId } = deployResponse.data
-
+        console.log(deployResponse)
+        const { taskId } = deployResponse.data.data
+        console.log(taskId)
         await db.insert(deployments).values({
             projectId: project.id,
             taskId,

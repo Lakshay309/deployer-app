@@ -1,30 +1,64 @@
-import { db } from '@/db'
-import { projects } from '@/db/schema'
-import { eq } from 'drizzle-orm'
-import { getCurrentUser } from '@/lib/session'
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import axios from 'axios'
+import { FolderOpen } from 'lucide-react'
 import Navbar from '@/components/navbar'
 import ProjectCard from '@/components/project-card'
 import NewProjectDialog from '@/components/new-project-dialog'
-import { FolderOpen } from 'lucide-react'
+import type { Project, User } from '@/types'
 
-export default async function DashboardPage() {
-    // get current user — redirects to login if not authenticated
-    const user = await getCurrentUser()
+export default function DashboardPage() {
+    const [user, setUser] = useState<User | null>(null)
+    const [userProjects, setUserProjects] = useState<Project[]>([])
+    const [isLoading, setIsLoading] = useState(true)
 
-    // get all projects for this user
-    const userProjects = await db
-        .select()
-        .from(projects)
-        .where(eq(projects.userId, user.id))
-        .orderBy(projects.createdAt)
+    const fetchData = useCallback(async () => {
+        try {
+            const [userRes, projectsRes] = await Promise.all([
+                axios.get('/api/auth/me'),
+                axios.get('/api/projects'),
+            ])
+            setUser(userRes.data.user)
+            setUserProjects(projectsRes.data.projects)
+        } catch (error) {
+            console.error('Failed to fetch dashboard data:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchData()
+    }, [fetchData])
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen">
+                <div className="border-b h-16" />
+                <main className="max-w-6xl mx-auto px-4 py-8">
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="space-y-2">
+                            <div className="h-7 w-32 bg-muted animate-pulse rounded" />
+                            <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                        </div>
+                        <div className="h-9 w-32 bg-muted animate-pulse rounded" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="h-40 bg-muted animate-pulse rounded-lg" />
+                        ))}
+                    </div>
+                </main>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen">
-            <Navbar username={user.username} />
+            <Navbar username={user?.username ?? ''} />
 
             <main className="max-w-6xl mx-auto px-4 py-8">
-
-                {/* header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-2xl font-semibold">Projects</h1>
@@ -35,10 +69,9 @@ export default async function DashboardPage() {
                             }
                         </p>
                     </div>
-                    <NewProjectDialog />
+                    <NewProjectDialog onProjectCreated={fetchData} />
                 </div>
 
-                {/* empty state */}
                 {userProjects.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <FolderOpen className="w-12 h-12 text-muted-foreground mb-4" />
@@ -50,13 +83,13 @@ export default async function DashboardPage() {
                     </div>
                 )}
 
-                {/* projects grid */}
                 {userProjects.length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {userProjects.map((project) => (
                             <ProjectCard
                                 key={project.id}
                                 project={project}
+                                onRefresh={fetchData}
                             />
                         ))}
                     </div>

@@ -1,5 +1,6 @@
 import { CloudWatchLogsClient, GetLogEventsCommand, DescribeLogStreamsCommand } from '@aws-sdk/client-cloudwatch-logs'
 import { WebSocketServer } from "ws"
+import 'dotenv/config'; 
 
 const PORT = process.env.PORT || 9000;
 const LOG_GROUP = process.env.LOG_GROUP;

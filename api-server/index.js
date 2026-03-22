@@ -40,7 +40,7 @@ function validateGitUrl(url){
 //     publisher.pulish(`logs:${log}`)
 // }
 app.post('/project',async(req,res)=>{
-    const projectId = generateSlug();
+    const {projectId} = req.body;
     const {gitURL}=req.body;
     if(!validateGitUrl(gitURL)){
         return res.json({
