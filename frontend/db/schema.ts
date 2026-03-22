@@ -24,7 +24,7 @@ export const betaEmails = pgTable('beta_emails', {
 export const projects = pgTable('projects', {
     id:          uuid('id').primaryKey().defaultRandom(),
     userId:      uuid('user_id').notNull().references(() => users.id),
-    name:        text('name').notNull(),
+    name:        text('name').notNull().unique(),
     repoUrl:     text('repo_url').notNull(),
     deployedUrl: text('deployed_url'),
     status:      text('status').default('idle'),

@@ -123,3 +123,4 @@ export type RegisterInput    = z.infer<typeof registerSchema>
 export type LoginInput       = z.infer<typeof loginSchema>
 export type NewProjectInput  = z.infer<typeof newProjectSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
