@@ -12,6 +12,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import Link from 'next/link'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 type NavbarProps = {
     username: string
@@ -31,9 +33,10 @@ export default function Navbar({ username }: NavbarProps) {
             <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
                 {/* logo */}
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold text-lg">
-                        Next Deployer
-                    </span>
+                    <Link href='/' className="font-semibold text-lg">
+                        React Deployer
+                    </Link>
+                    <ThemeToggle />
                 </div>
 
                 {/* user menu */}
@@ -50,7 +53,7 @@ export default function Navbar({ username }: NavbarProps) {
                             </span>
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                    {/* <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem className="gap-2 cursor-pointer">
                             <User className="w-4 h-4" />
                             Profile
@@ -63,7 +66,7 @@ export default function Navbar({ username }: NavbarProps) {
                             <LogOut className="w-4 h-4" />
                             Logout
                         </DropdownMenuItem>
-                    </DropdownMenuContent>
+                    </DropdownMenuContent> */}
                 </DropdownMenu>
             </div>
         </header>

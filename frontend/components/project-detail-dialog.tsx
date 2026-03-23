@@ -15,6 +15,9 @@ import {
 import LogViewer from '@/components/log-viewer'
 import type { Project, Deployment } from '@/types'
 
+const protocol = "http"
+const reverseProxy = "localhost:8000"
+
 type Props = {
     project: Project
     open: boolean
@@ -67,11 +70,11 @@ export default function ProjectDetailDialog({ project, open, onOpenChange, onRef
     }
     const allRefresh=async()=>{
         try {
-            if(!refresh) return;
-            setRefresh(false);
+            if(refresh) return;
+            setRefresh(true);
             fetchDeployments();
             onRefresh();
-            setRefresh(true);
+            setRefresh(false);
         } catch (err) {
             console.error('Failed to fetch all:', err)
         }
@@ -85,7 +88,7 @@ export default function ProjectDetailDialog({ project, open, onOpenChange, onRef
     const isInProgress = ['pending', 'building', 'uploading'].includes(project.status ?? '')
 
     // deployed url is just reverse proxy with project name as subdomain
-    const deployedUrl = `http://${project.name}.localhost:8000`
+    const deployedUrl = `${protocol}://${project.name}.${reverseProxy}`
 
     const repoName = project.repoUrl
         .replace('https://github.com/', '')

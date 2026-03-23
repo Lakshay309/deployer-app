@@ -28,17 +28,12 @@ export async function PATCH(
                 )
             ).returning()
 
-        await db.execute(sql`
-            UPDATE deployments
-            SET status = ${status}
-            WHERE id = (
-                SELECT id
-                FROM deployments
-                WHERE project_id = ${project.id}
-                ORDER BY created_at DESC
-                LIMIT 1
+        await db
+            .update(deployments)
+            .set({status})
+            .where(
+                eq(deployments.projectId,project.id)
             )
-        `)
 
         return NextResponse.json({ success: true })
 

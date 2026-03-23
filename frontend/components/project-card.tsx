@@ -11,14 +11,29 @@ type ProjectCardProps = {
     project: Project
     onRefresh: () => void
 }
+const protocol = "http"
+const reverseProxy = "localhost:8000"
 
 const statusConfig: Record<string, { label: string, className: string }> = {
-    idle:      { label: 'Never deployed', className: 'bg-muted text-muted-foreground' },
-    pending:   { label: 'Pending',        className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' },
-    building:  { label: 'Building',       className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-    uploading: { label: 'Uploading',      className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-    done:      { label: 'Deployed',       className: 'bg-green-500/10 text-green-600 dark:text-green-400' },
-    failed:    { label: 'Failed',         className: 'bg-destructive/10 text-destructive' },
+    idle:        { label: 'Never deployed', className: 'bg-muted text-muted-foreground' },
+
+    pending:     { label: 'Pending',        className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' },
+
+    building:    { label: 'Building',       className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+
+    uploading:   { label: 'Uploading',      className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+
+    done:        { label: 'Deployed',       className: 'bg-green-500/10 text-green-600 dark:text-green-400' },
+
+    redeploying: { label: 'Redeploying',    className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
+
+    undeploying: { label: 'Undeploying',    className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400' },
+
+    undeployed:  { label: 'Undeployed',     className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400' },
+
+    cancelled:   { label: 'Cancelled',      className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400' },
+
+    failed:      { label: 'Failed',         className: 'bg-destructive/10 text-destructive' },
 }
 
 export default function ProjectCard({ project, onRefresh }: ProjectCardProps) {
@@ -68,7 +83,7 @@ export default function ProjectCard({ project, onRefresh }: ProjectCardProps) {
                             className="flex items-center gap-2 text-sm text-blue-500 hover:underline"
                             onClick={(e) => {
                                 e.stopPropagation()
-                                window.open(`http://${project.name}.localhost:8000`, '_blank')
+                                window.open(`${protocol}://${project.name}.${reverseProxy}`, '_blank')
                             }}
                         >
                             <ExternalLink className="w-3 h-3 shrink-0" />

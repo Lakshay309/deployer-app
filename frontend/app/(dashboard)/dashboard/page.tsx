@@ -42,6 +42,7 @@ export default function DashboardPage() {
 
     useEffect(() => {
         fetchUserData()
+        fetchProjects()
     }, [fetchUserData])
 
     if (isLoading) {
@@ -111,7 +112,7 @@ export default function DashboardPage() {
                             <ProjectCard
                                 key={project.id}
                                 project={project}
-                                onRefresh={fetchProjects}
+                                onRefresh={handleRefresh}
                             />
                         ))}
                     </div>
