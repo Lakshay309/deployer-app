@@ -1,7 +1,7 @@
 import { db } from "@/db"
 import { deployments, projects } from "@/db/schema"
 import { getAuthUser } from "@/lib/auth"
-import { and, eq } from "drizzle-orm"
+import { and, eq,sql } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function PATCH(
@@ -27,12 +27,18 @@ export async function PATCH(
                     eq(projects.userId, user.userId)
                 )
             ).returning()
-        await db
-            .update(deployments)
-            .set({status})
-            .where(
-                eq(deployments.projectId,project.id)
+
+        await db.execute(sql`
+            UPDATE deployments
+            SET status = ${status}
+            WHERE id = (
+                SELECT id
+                FROM deployments
+                WHERE project_id = ${project.id}
+                ORDER BY created_at DESC
+                LIMIT 1
             )
+        `)
 
         return NextResponse.json({ success: true })
 

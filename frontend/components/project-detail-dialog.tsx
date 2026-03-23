@@ -23,12 +23,25 @@ type Props = {
 }
 
 const statusConfig: Record<string, { label: string, className: string }> = {
-    idle:      { label: 'Never deployed', className: 'bg-muted text-muted-foreground' },
-    pending:   { label: 'Pending',        className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' },
-    building:  { label: 'Building',       className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-    uploading: { label: 'Uploading',      className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-    done:      { label: 'Deployed',       className: 'bg-green-500/10 text-green-600 dark:text-green-400' },
-    failed:    { label: 'Failed',         className: 'bg-destructive/10 text-destructive' },
+    idle:        { label: 'Never deployed', className: 'bg-muted text-muted-foreground' },
+
+    pending:     { label: 'Pending',        className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' },
+
+    building:    { label: 'Building',       className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+
+    uploading:   { label: 'Uploading',      className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+
+    done:        { label: 'Deployed',       className: 'bg-green-500/10 text-green-600 dark:text-green-400' },
+
+    redeploying: { label: 'Redeploying',    className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
+
+    undeploying: { label: 'Undeploying',    className: 'bg-orange-500/10 text-orange-600 dark:text-orange-400' },
+
+    undeployed:  { label: 'Undeployed',     className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400' },
+
+    cancelled:   { label: 'Cancelled',      className: 'bg-gray-500/10 text-gray-600 dark:text-gray-400' },
+
+    failed:      { label: 'Failed',         className: 'bg-destructive/10 text-destructive' },
 }
 
 export default function ProjectDetailDialog({ project, open, onOpenChange, onRefresh }: Props) {
@@ -36,26 +49,35 @@ export default function ProjectDetailDialog({ project, open, onOpenChange, onRef
     const [error, setError] = useState<string | null>(null)
     const [latestTaskId, setLatestTaskId] = useState<string | null>(null)
     const [deployments, setDeployments] = useState<Deployment[]>([])
-
+    const [refresh,setRefresh]=useState<boolean>(false)
+    async function fetchDeployments() {
+        try {
+            const res = await axios.get(`/api/projects/${project.name}/deployments`)
+            console.log(res);
+            const deps: Deployment[] = res.data.deployments
+            console.log(deps)
+            setDeployments(deps)
+            console.log(deployments)
+            if (deps.length > 0 && deps[0].taskId) {
+                setLatestTaskId(deps[0].taskId)
+            }
+        } catch (err) {
+            console.error('Failed to fetch deployments:', err)
+        }
+    }
+    const allRefresh=async()=>{
+        try {
+            if(!refresh) return;
+            setRefresh(false);
+            fetchDeployments();
+            onRefresh();
+            setRefresh(true);
+        } catch (err) {
+            console.error('Failed to fetch all:', err)
+        }
+    }
     useEffect(() => {
         if (!open) return
-
-        async function fetchDeployments() {
-            try {
-                const res = await axios.get(`/api/projects/${project.name}/deployments`)
-                console.log(res);
-                const deps: Deployment[] = res.data.deployments
-                console.log(deps)
-                setDeployments(deps)
-                console.log(deployments)
-                if (deps.length > 0 && deps[0].taskId) {
-                    setLatestTaskId(deps[0].taskId)
-                }
-            } catch (err) {
-                console.error('Failed to fetch deployments:', err)
-            }
-        }
-
         fetchDeployments()
     }, [open, project.name])
 
@@ -75,10 +97,11 @@ export default function ProjectDetailDialog({ project, open, onOpenChange, onRef
 
         try {
             const res = await axios.post(`/api/projects/${project.name}/redeploy`)
-            console.log(res)
-            const { taskId } = res.data.data
+            // console.log(res)
+            const { taskId } = res.data
+            // console.log(taskId);
             setLatestTaskId(taskId)
-            onRefresh()
+            allRefresh()
 
         } catch (err) {
             if (axios.isAxiosError(err)) {
@@ -179,7 +202,11 @@ export default function ProjectDetailDialog({ project, open, onOpenChange, onRef
                         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                             Deployment logs
                         </p>
-                        <LogViewer taskId={latestTaskId} projectName={project.name} />
+                        <LogViewer 
+                            taskId={latestTaskId} 
+                            projectName={project.name} 
+                            onDeploymentDone={allRefresh} 
+                        />
                     </div>
 
                     {/* deployment history */}

@@ -38,6 +38,7 @@ export async function GET(
             .from(deployments)
             .where(eq(deployments.projectId, id))
             .orderBy(desc(deployments.createdAt))
+            .limit(5)
         console.log(projectDeployments)
         return NextResponse.json({ deployments: projectDeployments })
 

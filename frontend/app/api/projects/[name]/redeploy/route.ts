@@ -2,7 +2,7 @@ import { db } from "@/db"
 import { deployments, projects } from "@/db/schema"
 import { getAuthUser } from "@/lib/auth"
 import axios from "axios"
-import { and, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(
@@ -35,17 +35,13 @@ export async function POST(
             )
         }
 
-        if (['pending', 'building', 'uploading'].includes(project.status ?? '')) {
+        if (['pending', 'building', 'uploading','redeploying'].includes(project.status ?? '')) {
             return NextResponse.json(
                 { error: 'A deployment is already in progress' },
                 { status: 409 }
             )
         }
 
-        await db
-            .update(projects)
-            .set({ status: 'pending' })
-            .where(eq(projects.name, name))
 
         const deployResponse = await axios.post(
             `${process.env.API_SERVER_URL}/project`,
@@ -58,6 +54,24 @@ export async function POST(
         const { taskId } = deployResponse.data.data
         console.log("Working???")
 
+        // updating after creating a worker
+        await db
+            .update(projects)
+            .set({ status: 'redeploying' }) // redeploying
+            .where(eq(projects.name, name))
+
+        const [lastDeployment]=await db
+            .select()
+            .from(deployments)
+            .where(eq(deployments.projectId,project.id))
+            .orderBy(desc(deployments.createdAt))
+            .limit(1)
+        
+        await db
+            .update(deployments).
+            set({status:"undeployed"}).
+            where(eq(deployments.id,lastDeployment.id))
+        
         await db.insert(deployments).values({
             projectId: project.id,
             taskId,

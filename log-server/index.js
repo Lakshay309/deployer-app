@@ -159,14 +159,14 @@ wss.on('connection', (ws) => {
             return
         }
 
-    } catch (err) {
-        console.error('[log-server] Poll error:', err.message)
-    }
+        } catch (err) {
+            console.error('[log-server] Poll error:', err.message)
+        }
 
-    if (polling) {
-        pollTimer = setTimeout(poll, POLL_INTERVAL_MS)
+        if (polling) {
+            pollTimer = setTimeout(poll, POLL_INTERVAL_MS)
+        }
     }
-}
 
             poll()
 

@@ -2,35 +2,47 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, RefreshCw } from 'lucide-react'
 import Navbar from '@/components/navbar'
 import ProjectCard from '@/components/project-card'
 import NewProjectDialog from '@/components/new-project-dialog'
+import { Button } from '@/components/ui/button'
 import type { Project, User } from '@/types'
 
 export default function DashboardPage() {
     const [user, setUser] = useState<User | null>(null)
     const [userProjects, setUserProjects] = useState<Project[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isRefreshing, setIsRefreshing] = useState(false)
 
-    const fetchData = useCallback(async () => {
+    const fetchUserData = useCallback(async () => {
         try {
-            const [userRes, projectsRes] = await Promise.all([
-                axios.get('/api/auth/me'),
-                axios.get('/api/projects'),
-            ])
+            const userRes = await axios.get('/api/auth/me')
             setUser(userRes.data.user)
-            setUserProjects(projectsRes.data.projects)
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error)
         } finally {
             setIsLoading(false)
         }
     }, [])
+    const fetchProjects = async()=>{
+        try {
+            const projectRes =await axios.get('/api/projects');
+            setUserProjects(projectRes.data.projects);
+        } catch (error) {
+            console.error('Failed to fetch dashboard data:', error)
+        }
+    }
+
+    async function handleRefresh() {
+        setIsRefreshing(true)
+        await fetchProjects()
+        setIsRefreshing(false)
+    }
 
     useEffect(() => {
-        fetchData()
-    }, [fetchData])
+        fetchUserData()
+    }, [fetchUserData])
 
     if (isLoading) {
         return (
@@ -69,7 +81,17 @@ export default function DashboardPage() {
                             }
                         </p>
                     </div>
-                    <NewProjectDialog onProjectCreated={fetchData} />
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        </Button>
+                        <NewProjectDialog onProjectCreated={handleRefresh} />
+                    </div>
                 </div>
 
                 {userProjects.length === 0 && (
@@ -89,7 +111,7 @@ export default function DashboardPage() {
                             <ProjectCard
                                 key={project.id}
                                 project={project}
-                                onRefresh={fetchData}
+                                onRefresh={fetchProjects}
                             />
                         ))}
                     </div>

@@ -14,7 +14,7 @@ export type LogMessage = {
 type Props = {
     taskId: string | null
     projectName: string   // needed to call the status API
-    onDeploymentDone?: () => void  // optional callback to refresh dashboard
+    onDeploymentDone: () => void  // optional callback to refresh dashboard
 }
 
 export default function LogViewer({ taskId ,projectName, onDeploymentDone }: Props) {
@@ -54,9 +54,10 @@ export default function LogViewer({ taskId ,projectName, onDeploymentDone }: Pro
                     await axios.patch(`/api/projects/${projectName}/status`, {
                         status: 'done'
                     })
-
+                    console.log("deployed???")
                     // refresh dashboard cards
-                    onDeploymentDone?.()
+                    onDeploymentDone()
+                    console.log("deployed???")
                     return
                 }
 
