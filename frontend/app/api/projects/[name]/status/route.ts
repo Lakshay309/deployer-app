@@ -25,16 +25,21 @@ export async function PATCH(
                 and(
                     eq(projects.name, name),
                     eq(projects.userId, user.userId)
+                    
                 )
             ).returning()
 
-        await db
-            .update(deployments)
-            .set({status})
-            .where(
-                eq(deployments.projectId,project.id)
+        await db.execute(sql`
+            UPDATE deployments
+            SET status = ${status}
+            WHERE id = (
+                SELECT id
+                FROM deployments
+                WHERE project_id = ${project.id}
+                ORDER BY created_at DESC
+                LIMIT 1
             )
-
+        `)
         return NextResponse.json({ success: true })
 
     } catch (error) {
